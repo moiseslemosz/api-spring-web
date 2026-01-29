@@ -18,8 +18,7 @@ public class UserRepository {
         System.out.println(usuario);
     }
     public void deleteById(Integer id) {
-        System.out.println("DELETE/id - Deletando o usuário id: %d do banco de dados...");
-        System.out.println(id);
+        System.out.printf("DELETE/id - Deletando o usuário id: %d do banco de dados...", id);
     }
     public List<Usuario> findAll() {
         System.out.println("LIST - Listando os usuários do sistema");
