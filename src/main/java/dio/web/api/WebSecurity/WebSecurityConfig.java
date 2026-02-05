@@ -23,8 +23,10 @@ public class WebSecurityConfig {
         http
             .csrf(csrf -> csrf.disable()) 
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/").permitAll()
                 .requestMatchers("/login").permitAll()
-                .requestMatchers("/users").hasRole("USERS") // Exemplo: Só USER acessa /users
+                .requestMatchers("/users").hasAnyRole("USERS", "MANAGERS") // Exemplo: Só USER acessa /users
+                .requestMatchers("/managers").hasAnyRole("MANAGERS")
                 .anyRequest().authenticated()
             )
             .httpBasic(Customizer.withDefaults());
