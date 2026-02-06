@@ -29,17 +29,18 @@ public class WebSecurityConfig {
                 .requestMatchers("/managers").hasAnyRole("MANAGERS")
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults());
+            .httpBasic(Customizer.withDefaults())
+            .formLogin(Customizer.withDefaults());
 
         return http.build();
     }
 
-    // 2. CONFIGURAÇÃO DE USUÁRIOS (A tradução exata da sua imagem)
+    // 2. CONFIGURAÇÃO DE USUÁRIOS 
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
             .username("user")
-            .password("{noop}user123") // {noop} significa sem criptografia (igual na imagem)
+            .password("{noop}user123") // {noop} significa sem criptografia para a senha
             .roles("USERS")
             .build();
 
