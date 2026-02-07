@@ -6,10 +6,9 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -17,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-    // 1. CONFIGURAÇÃO DE FILTROS (Equivalente ao antigo configure(HttpSecurity http))
+    // 1. CONFIGURAÇÃO DE FILTROS (Rotas e permissões)
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -25,31 +24,23 @@ public class WebSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/login").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/users").hasAnyRole("USERS", "MANAGERS") // Exemplo: Só USER acessa /users
                 .requestMatchers("/managers").hasAnyRole("MANAGERS")
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults())
-            .formLogin(Customizer.withDefaults());
-
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // Disable CSRF for H2 console
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())) // Allow frames for H2 console
+            .httpBasic(Customizer.withDefaults());
         return http.build();
     }
-
-    // 2. CONFIGURAÇÃO DE USUÁRIOS 
+    /* 2. CONFIGURAÇÃO DO ENCODER 
+    /Ao definir este Bean, o Spring automaticamente o usa para checar as senhas 
+    vindas do SecurityDatabaseService. */
+    @SuppressWarnings("deprecation")
     @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.builder()
-            .username("user")
-            .password("{noop}user123") // {noop} significa sem criptografia para a senha
-            .roles("USERS")
-            .build();
-
-        UserDetails admin = User.builder()
-            .username("admin")
-            .password("{noop}master123")
-            .roles("MANAGERS")
-            .build();
-
-        return new InMemoryUserDetailsManager(user, admin);
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(); // BCrypt para senhas seguras
+        // return NoOpPasswordEncoder.getInstance(); // Para testes sem criptografia (não recomendado
     }
 }

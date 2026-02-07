@@ -12,37 +12,44 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import dio.web.api.model.Usuario;
-import dio.web.api.repository.UserRepository;
+
+import dio.web.api.model.User; 
+import dio.web.api.repository.UserRepositorydb;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @RestController
 @RequestMapping("/users")
 public class UsuarioController {
+
+    // INJEÇÃO DO REPOSITÓRIO DO BANCO
     @Autowired
-    private UserRepository repository;
-    @GetMapping()
-    public List<Usuario> getUsers() {
-        // Lógica para obter todos os usuários
+    private UserRepositorydb repository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @GetMapping
+    public List<User> list() { // Retorna lista de User (Entidade)
         return repository.findAll();
     }
+
     @GetMapping("/{username}")
-    public Usuario getOne(@PathVariable("username") String username) {
-        // Lógica para obter um usuário pelo nome de usuário
+    public User getOne(@PathVariable("username") String username) {
         return repository.findByUsername(username);
     }
+
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable("id") Integer id) {
-        // Lógica para deletar um usuário pelo ID
+    public void delete(@PathVariable("id") Integer id) {
         repository.deleteById(id);
     }
-    @PostMapping()
-    public void postUser(@RequestBody Usuario usuario) {
-        // Lógica para criar um novo usuário
-        repository.save(usuario);
+
+    @PostMapping
+    public void postUser(@RequestBody User user) { // Recebe User no corpo
+        repository.save(user);
     }
-    @PutMapping()
-    public void putUser(@RequestBody Usuario usuario) {
-        // Lógica para atualizar um usuário existente
-        repository.save(usuario);
+
+    @PutMapping
+    public void putUser(@RequestBody User user) {
+        repository.save(user);
     }
 }
