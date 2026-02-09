@@ -2,12 +2,12 @@ package dio.web.api.WebSecurity;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; 
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -16,31 +16,40 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-    // 1. CONFIGURAÇÃO DE FILTROS (Rotas e permissões)
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) 
+            .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .authorizeHttpRequests(auth -> auth
+                // 1. ROTAS PÚBLICAS
                 .requestMatchers("/").permitAll()
-                .requestMatchers("/login").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/users").hasAnyRole("USERS", "MANAGERS") // Exemplo: Só USER acessa /users
+                .requestMatchers("/login").permitAll()
+
+                // 2. REGRAS DE DELETE (Só Gerente/admin )
+                // Se alguém tentar deletar /users/1, o Spring verifica se é MANAGER primeiro
+                .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("MANAGERS")
+
+                // 3. REGRAS DE CRIAÇÃO/EDIÇÃO Só Gerente/admin
+                .requestMatchers(HttpMethod.POST, "/users").hasRole("MANAGERS")
+                .requestMatchers(HttpMethod.PUT, "/users").hasRole("MANAGERS")
+
+                // 4. REGRA DE LEITURA (Usuários e Gerentes)
+                // Se chegou aqui, é porque não é DELETE nem POST. Então libera o GET para ambos.
+                .requestMatchers(HttpMethod.GET, "/users/**").hasAnyRole("USERS", "MANAGERS")
+                
+                // 5. BLOQUEIA O RESTO
                 .requestMatchers("/managers").hasAnyRole("MANAGERS")
                 .anyRequest().authenticated()
             )
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // Disable CSRF for H2 console
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())) // Allow frames for H2 console
             .httpBasic(Customizer.withDefaults());
+
         return http.build();
     }
-    /* 2. CONFIGURAÇÃO DO ENCODER 
-    /Ao definir este Bean, o Spring automaticamente o usa para checar as senhas 
-    vindas do SecurityDatabaseService. */
-    @SuppressWarnings("deprecation")
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // BCrypt para senhas seguras
-        // return NoOpPasswordEncoder.getInstance(); // Para testes sem criptografia (não recomendado
+        return new BCryptPasswordEncoder();
     }
 }

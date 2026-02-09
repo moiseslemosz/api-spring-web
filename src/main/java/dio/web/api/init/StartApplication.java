@@ -11,12 +11,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Component
 public class StartApplication implements CommandLineRunner {
+    // Injetando o repositório de usuários para acessar o banco de dados
     @Autowired
     private UserRepositorydb repository;
-
+    
+    //criptografia de senha
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Este método é executado na inicialização da aplicação, garantindo que os usuários admin e user existam no banco de dados.
     @Transactional
     @Override
     public void run(String... args) throws Exception {

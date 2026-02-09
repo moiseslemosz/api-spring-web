@@ -1,27 +1,17 @@
 package dio.web.api.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-
-import dio.web.api.model.User; 
+import dio.web.api.model.User;
 import dio.web.api.repository.UserRepositorydb;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
 public class UsuarioController {
 
-    // INJEÇÃO DO REPOSITÓRIO DO BANCO
     @Autowired
     private UserRepositorydb repository;
 
@@ -29,7 +19,7 @@ public class UsuarioController {
     private PasswordEncoder passwordEncoder;
 
     @GetMapping
-    public List<User> list() { // Retorna lista de User (Entidade)
+    public List<User> list() {
         return repository.findAll();
     }
 
@@ -44,12 +34,33 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public void postUser(@RequestBody User user) { // Recebe User no corpo
+    public void postUser(@RequestBody User user) {
+        criptografarEBlindar(user); // Chama a lógica
         repository.save(user);
     }
 
-    @PutMapping
-    public void putUser(@RequestBody User user) {
+    // O método PUT é similar ao POST, mas recebe o ID do usuário na URL para garantir que estamos editando um usuário existente.
+    @PutMapping("/{id}")
+    public void putUser(@PathVariable("id") Integer id, @RequestBody User user) {
+        user.setId(id);
+        criptografarEBlindar(user); // Reutiliza a mesma lógica
         repository.save(user);
+    }
+
+    // Método auxiliar privado para não repetir código
+    private void criptografarEBlindar(User user) {
+        // Criptografia de senha
+        String pass = user.getPassword();
+        user.setPassword(passwordEncoder.encode(pass));
+
+        // Blindagem de Roles
+        boolean isManager = user.getRoles() != null && user.getRoles().contains("MANAGERS");
+        user.setRoles(new java.util.ArrayList<>());
+        
+        if (isManager) {
+            user.getRoles().add("MANAGERS");
+        } else {
+            user.getRoles().add("USERS");
+        }
     }
 }
