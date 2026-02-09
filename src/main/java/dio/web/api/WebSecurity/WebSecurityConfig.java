@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -23,6 +24,7 @@ public class WebSecurityConfig {
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .authorizeHttpRequests(auth -> auth
                 // 1. ROTAS PÚBLICAS
+                .requestMatchers(SWAGGER_WHITELIST).permitAll()
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login").permitAll()
@@ -43,8 +45,9 @@ public class WebSecurityConfig {
                 .requestMatchers("/managers").hasAnyRole("MANAGERS")
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults());
-
+            .httpBasic(Customizer.withDefaults())
+            // Ele roda DEPOIS da verificação de senha padrão, validando o Token
+            .addFilterAfter(new JWTFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -52,4 +55,10 @@ public class WebSecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    private static final String[] SWAGGER_WHITELIST = {
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+    };
 }
