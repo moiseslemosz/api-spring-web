@@ -4,16 +4,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureException;
-import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,16 +46,19 @@ public class JWTFilter extends OncePerRequestFilter {
                 // Se não tem token, limpa o contexto (garante que é anônimo)
                 SecurityContextHolder.clearContext();
             }
-            
-            // Continua a requisição para o Controller
-            filterChain.doFilter(request, response);
-
-        } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException e) {
-            // Se o token der erro (ex: expirou), responde com erro 403 e NÃO deixa passar
+        } catch (Exception e) {
+            // MUDANÇA CRUCIAL AQUI:
+            // Se der erro no token (expirado, malformado), a gente NÃO devolve erro 403 aqui.
+            // A gente apenas ignora o token e limpa o contexto.
+            // Assim, a requisição continua como ANÔNIMA.
+            // Se a rota for pública (/login), vai passar. Se for privada (/users), o Spring barra depois.
             e.printStackTrace();
-            response.setStatus(HttpStatus.FORBIDDEN.value());
-            // return; // O return implícito aqui impede que o filterChain rode abaixo
+            SecurityContextHolder.clearContext();
         }
+
+        // O filterChain.doFilter TEM que rodar sempre, com ou sem sucesso no token.
+        // Isso permite que a requisição chegue ao Controller.
+        filterChain.doFilter(request, response);
     }
 
     // Método auxiliar para converter List<String> em List<SimpleGrantedAuthority>

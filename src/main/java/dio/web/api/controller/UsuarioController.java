@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -33,29 +34,53 @@ public class UsuarioController {
         repository.deleteById(id);
     }
 
+    // POST: Criação de usuário novo 
     @PostMapping
     public void postUser(@RequestBody User user) {
-        criptografarEBlindar(user); // Chama a lógica
+        criptografarEBlindar(user); 
         repository.save(user);
     }
 
-    // O método PUT é similar ao POST, mas recebe o ID do usuário na URL para garantir que estamos editando um usuário existente.
-    @PutMapping("/{id}")
-    public void putUser(@PathVariable("id") Integer id, @RequestBody User user) {
-        user.setId(id);
-        criptografarEBlindar(user); // Reutiliza a mesma lógica
-        repository.save(user);
+    // PUT: Atualização de usuário existente
+    @PutMapping 
+    public void putUser(@RequestBody User user) {
+        // Lógica para não apagar a senha se ela vier nula
+        User userBanco = repository.findById(user.getId()).orElse(null);
+
+        if(userBanco != null) {
+            // Se mandou nome novo, troca. Se não, mantém o velho.
+            if(user.getName() != null) userBanco.setName(user.getName());
+
+            // Se mandou senha nova, criptografa. Se não, mantém a velha.
+            if(user.getPassword() != null && !user.getPassword().isEmpty()) {
+                userBanco.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+
+            // Se mandou roles novas, aplica a blindagem.
+            if(user.getRoles() != null) {
+                // Reaproveitando a lógica de blindagem, mas aplicada ao objeto do banco
+                boolean isManager = user.getRoles().contains("MANAGERS");
+                userBanco.setRoles(new ArrayList<>());
+                if (isManager) {
+                    userBanco.getRoles().add("MANAGERS");
+                } else {
+                    userBanco.getRoles().add("USERS");
+                }
+            }
+
+            repository.save(userBanco);
+        } else {
+            throw new RuntimeException("Usuário não encontrado para atualização.");
+        }
     }
 
-    // Método auxiliar privado para não repetir código
+    // Método auxiliar usado APENAS no POST (Criação)
     private void criptografarEBlindar(User user) {
-        // Criptografia de senha
         String pass = user.getPassword();
         user.setPassword(passwordEncoder.encode(pass));
 
-        // Blindagem de Roles
         boolean isManager = user.getRoles() != null && user.getRoles().contains("MANAGERS");
-        user.setRoles(new java.util.ArrayList<>());
+        user.setRoles(new ArrayList<>());
         
         if (isManager) {
             user.getRoles().add("MANAGERS");

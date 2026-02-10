@@ -28,6 +28,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/login").permitAll()
 
                 // 2. REGRAS DE DELETE (Só Gerente/admin )
                 // Se alguém tentar deletar /users/1, o Spring verifica se é MANAGER primeiro
@@ -45,7 +46,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/managers").hasAnyRole("MANAGERS")
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults())
+            //.httpBasic(Customizer.withDefaults())
             // Ele roda DEPOIS da verificação de senha padrão, validando o Token
             .addFilterAfter(new JWTFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
