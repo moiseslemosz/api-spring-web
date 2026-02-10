@@ -35,6 +35,7 @@ public class JWTCreator {
     }
 
     // Método 2: Lê o Token (String -> Objeto)
+    // Lança exceção se o token for inválido (ex: expirou, assinatura errada, etc)
     public static JWTObject create(String token, String prefix, String key)
             throws ExpiredJwtException, UnsupportedJwtException, MalformedJwtException, SignatureException, IllegalArgumentException {
         
